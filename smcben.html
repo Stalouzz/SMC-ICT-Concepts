@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Logic — Study Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg2: #10141c;
+    --bg3: #161b26;
+    --panel: #1a2030;
+    --border: #252d40;
+    --border2: #2e3a52;
+    --accent: #00d4ff;
+    --accent2: #0099cc;
+    --gold: #f5c842;
+    --bull: #00e676;
+    --bear: #ff3d5a;
+    --neutral: #8899bb;
+    --muted: #4a5878;
+    --text: #d0daf0;
+    --text2: #8899bb;
+    --text3: #4a5878;
+    --highlight: rgba(0,212,255,0.07);
+    --highlight-bull: rgba(0,230,118,0.07);
+    --highlight-bear: rgba(255,61,90,0.07);
+    --highlight-gold: rgba(245,200,66,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lora', Georgia, serif;
+    font-size: 15px;
+    line-height: 1.75;
+    padding: 0;
+  }
+
+  /* ── COVER ── */
+  .cover {
+    background: linear-gradient(135deg, #050810 0%, #0a1020 40%, #0d1830 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 72px 60px 64px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 40%;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(245,200,66,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cover-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cover-tag::before {
+    content: '';
+    width: 24px; height: 1px;
+    background: var(--accent);
+    display: inline-block;
+  }
+  .cover h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .cover h1 span { color: var(--accent); }
+  .cover-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    color: var(--neutral);
+    font-size: 17px;
+    margin-bottom: 40px;
+    max-width: 540px;
+  }
+  .cover-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 48px;
+  }
+  .pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 3px;
+    border: 1px solid var(--border2);
+    color: var(--neutral);
+    background: var(--bg2);
+  }
+  .pill.accent { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.06); }
+  .pill.gold { border-color: var(--gold); color: var(--gold); background: rgba(245,200,66,0.06); }
+  .cover-disclaimer {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    border-left: 2px solid var(--muted);
+    padding-left: 12px;
+    max-width: 560px;
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 40px 80px;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 32px 36px;
+    margin: 48px 0 60px;
+  }
+  .toc-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+  .toc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 40px;
+  }
+  .toc-item {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--neutral);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .toc-num {
+    color: var(--accent);
+    font-weight: 600;
+    min-width: 22px;
+  }
+
+  /* ── SECTION HEADERS ── */
+  .section-header {
+    margin: 56px 0 28px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .section-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+  .section-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+  .section-header h2 .accent { color: var(--accent); }
+  .section-header h2 .gold { color: var(--gold); }
+
+  h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: #e0eaf8;
+    margin: 28px 0 12px;
+    letter-spacing: -0.01em;
+  }
+  h4 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin: 22px 0 8px;
+  }
+
+  p { margin-bottom: 14px; color: var(--text); }
+
+  /* ── DEFINITION CARDS ── */
+  .def-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 5px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .def-card.bull { border-left-color: var(--bull); }
+  .def-card.bear { border-left-color: var(--bear); }
+  .def-card.gold { border-left-color: var(--gold); }
+  .def-card.neutral { border-left-color: var(--neutral); }
+  .def-term {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .def-term .badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    background: rgba(0,212,255,0.1);
+    color: var(--accent);
+  }
+  .def-term .badge.bull { background: rgba(0,230,118,0.1); color: var(--bull); }
+  .def-term .badge.bear { background: rgba(255,61,90,0.1); color: var(--bear); }
+  .def-term .badge.gold { background: rgba(245,200,66,0.1); color: var(--gold); }
+  .simple-def {
+    color: var(--text);
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  .technical-def {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--neutral);
+    padding: 10px 14px;
+    background: var(--bg3);
+    border-radius: 4px;
+    line-height: 1.6;
+  }
+  .technical-def strong { color: var(--accent); }
+
+  /* ── FLOW DIAGRAMS ── */
+  .flow-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--neutral);
+    line-height: 1.9;
+  }
+  .flow-box .bull-txt { color: var(--bull); font-weight: 600; }
+  .flow-box .bear-txt { color: var(--bear); font-weight: 600; }
+  .flow-box .accent-txt { color: var(--accent); font-weight: 600; }
+  .flow-box .gold-txt { color: var(--gold); font-weight: 600; }
+  .flow-box .arrow { color: var(--muted); margin: 0 6px; }
+
+  /* ── CHART EXAMPLES ── */
+  .chart-example {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 24px 0;
+  }
+  .chart-header {
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .chart-header.bull-header { background: rgba(0,230,118,0.07); }
+  .chart-header.bear-header { background: rgba(255,61,90,0.07); }
+  .chart-header.sweep-header { background: rgba(245,200,66,0.07); }
+  .chart-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+  }
+  .chart-pair {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--neutral);
+    letter-spacing: 0.1em;
+  }
+  .chart-body {
+    padding: 24px 20px;
+    background: var(--bg2);
+  }
+  .chart-ascii {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--neutral);
+    line-height: 1.65;
+    white-space: pre;
+    overflow-x: auto;
+    padding: 16px;
+    background: var(--bg3);
+    border-radius: 5px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .chart-ascii .bull-c { color: var(--bull); }
+  .chart-ascii .bear-c { color: var(--bear); }
+  .chart-ascii .gold-c { color: var(--gold); }
+  .chart-ascii .accent-c { color: var(--accent); }
+
+  .scenario-steps {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 10px 14px;
+    background: var(--bg3);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .step-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+    background: rgba(0,212,255,0.1);
+    border-radius: 3px;
+    padding: 2px 7px;
+    min-width: 30px;
+    text-align: center;
+    margin-top: 2px;
+  }
+  .step-num.bull-step { color: var(--bull); background: rgba(0,230,118,0.1); }
+  .step-num.bear-step { color: var(--bear); background: rgba(255,61,90,0.1); }
+  .step-num.gold-step { color: var(--gold); background: rgba(245,200,66,0.1); }
+  .step-text { font-size: 13.5px; color: var(--text); flex: 1; }
+  .step-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 3px;
+  }
+
+  /* ── TRADE SETUP BOX ── */
+  .trade-setup {
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 20px 0;
+  }
+  .trade-setup-header {
+    background: var(--panel);
+    padding: 12px 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+  }
+  .trade-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+  .trade-cell {
+    background: var(--bg2);
+    padding: 16px 18px;
+  }
+  .trade-cell-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .trade-cell-value {
+    font-size: 13.5px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .trade-cell-value.entry { color: var(--accent); }
+  .trade-cell-value.sl { color: var(--bear); }
+  .trade-cell-value.tp { color: var(--bull); }
+
+  /* ── CALLOUTS ── */
+  .callout {
+    padding: 16px 20px;
+    border-radius: 5px;
+    margin: 16px 0;
+    border: 1px solid;
+    font-size: 13.5px;
+  }
+  .callout.info { background: var(--highlight); border-color: rgba(0,212,255,0.2); color: var(--text); }
+  .callout.bull { background: var(--highlight-bull); border-color: rgba(0,230,118,0.2); color: var(--text); }
+  .callout.bear { background: var(--highlight-bear); border-color: rgba(255,61,90,0.2); color: var(--text); }
+  .callout.gold { background: var(--highlight-gold); border-color: rgba(245,200,66,0.25); color: var(--text); }
+  .callout-icon { font-size: 15px; margin-bottom: 5px; }
+  .callout strong { color: var(--accent); }
+  .callout.bull strong { color: var(--bull); }
+  .callout.bear strong { color: var(--bear); }
+  .callout.gold strong { color: var(--gold); }
+
+  /* ── MISTAKE CARDS ── */
+  .mistake-list {
+    display: grid;
+    gap: 10px;
+    margin: 16px 0;
+  }
+  .mistake {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 14px 18px;
+    background: rgba(255,61,90,0.04);
+    border: 1px solid rgba(255,61,90,0.15);
+    border-radius: 5px;
+  }
+  .mistake-icon {
+    font-size: 15px;
+    min-width: 22px;
+    text-align: center;
+    margin-top: 2px;
+  }
+  .mistake-content h5 {
+    font-family: 'Syne', sans-serif;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #e0eaf8;
+    margin-bottom: 4px;
+  }
+  .mistake-content p {
+    font-size: 13px;
+    color: var(--neutral);
+    margin: 0;
+  }
+
+  /* ── PRACTICE BOX ── */
+  .practice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 16px 0;
+  }
+  .practice-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 20px;
+  }
+  .practice-card h5 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .practice-card ul {
+    list-style: none;
+    padding: 0;
+  }
+  .practice-card ul li {
+    font-size: 13px;
+    color: var(--neutral);
+    padding: 4px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .practice-card ul li::before {
+    content: '→';
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+
+  /* ── CHEAT SHEET ── */
+  .cheat-sheet {
+    background: linear-gradient(135deg, #0d1525 0%, #111a2e 100%);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 32px 0;
+    page-break-inside: avoid;
+  }
+  .cheat-header {
+    padding: 20px 28px;
+    background: rgba(0,212,255,0.05);
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cheat-header h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .cheat-header .cheat-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+  .cheat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+  .cheat-cell {
+    background: var(--bg2);
+    padding: 18px 20px;
+  }
+  .cheat-cell h5 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cheat-cell h5.bull { color: var(--bull); border-color: rgba(0,230,118,0.2); }
+  .cheat-cell h5.bear { color: var(--bear); border-color: rgba(255,61,90,0.2); }
+  .cheat-cell h5.gold { color: var(--gold); border-color: rgba(245,200,66,0.2); }
+  .cheat-cell ul {
+    list-style: none;
+    padding: 0;
+  }
+  .cheat-cell ul li {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--neutral);
+    padding: 3px 0;
+    display: flex;
+    gap: 7px;
+    line-height: 1.5;
+  }
+  .cheat-cell ul li::before {
+    content: '▸';
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .cheat-cell ul li b { color: var(--text); font-weight: 600; }
+
+  /* ── RULE TABLE ── */
+  .rule-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    margin: 16px 0;
+  }
+  .rule-table th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--panel);
+    color: var(--accent);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border2);
+  }
+  .rule-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--neutral);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+  .rule-table tr:last-child td { border-bottom: none; }
+  .rule-table tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+  .rule-table .bull-td { color: var(--bull); }
+  .rule-table .bear-td { color: var(--bear); }
+  .rule-table .gold-td { color: var(--gold); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  /* ── PSYCHOLOGY SECTION ── */
+  .psych-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 18px 0;
+  }
+  .psych-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+  .psych-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 3px;
+    min-width: 110px;
+    text-align: center;
+    margin-top: 1px;
+  }
+  .psych-label.retail { background: rgba(255,61,90,0.12); color: var(--bear); }
+  .psych-label.smart { background: rgba(0,212,255,0.1); color: var(--accent); }
+  .psych-label.result { background: rgba(245,200,66,0.1); color: var(--gold); }
+  .psych-text { font-size: 13.5px; color: var(--neutral); flex: 1; }
+
+  /* ── TAGS ── */
+  .tag {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    margin: 1px 2px;
+  }
+  .tag.bull { background: rgba(0,230,118,0.1); color: var(--bull); }
+  .tag.bear { background: rgba(255,61,90,0.1); color: var(--bear); }
+  .tag.accent { background: rgba(0,212,255,0.1); color: var(--accent); }
+  .tag.gold { background: rgba(245,200,66,0.1); color: var(--gold); }
+
+  code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    background: var(--bg3);
+    color: var(--accent);
+    padding: 2px 7px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+
+  ul.body-list {
+    padding-left: 0;
+    list-style: none;
+    margin: 10px 0 14px;
+  }
+  ul.body-list li {
+    padding: 4px 0 4px 18px;
+    position: relative;
+    font-size: 14px;
+    color: var(--text);
+  }
+  ul.body-list li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-size: 11px;
+    top: 6px;
+  }
+
+  @media (max-width: 700px) {
+    .cover { padding: 40px 24px 36px; }
+    .container { padding: 0 20px 60px; }
+    .trade-grid, .cheat-grid, .practice-grid { grid-template-columns: 1fr; }
+    .toc-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ COVER ═══════════════════════════════ -->
+<div class="cover">
+  <div class="cover-tag">Market Structure · Liquidity · Smart Money Concepts</div>
+  <h1>Trading <span>Logic</span><br>Study Notes</h1>
+  <div class="cover-sub">A complete beginner-to-intermediate reference on how price truly moves — liquidity, structure, order blocks, and trade logic explained.</div>
+  <div class="cover-pills">
+    <span class="pill accent">Sell-Side Liquidity</span>
+    <span class="pill accent">Buy-Side Liquidity</span>
+    <span class="pill">Order Blocks</span>
+    <span class="pill">Market Structure</span>
+    <span class="pill">BOS &amp; CHoCH</span>
+    <span class="pill">Liquidity Sweeps</span>
+    <span class="pill">Invalidation</span>
+    <span class="pill gold">Premium &amp; Discount</span>
+    <span class="pill">Entry · SL · TP Logic</span>
+  </div>
+  <div class="cover-disclaimer">⚠ Educational material only. Not financial advice. Trading involves significant risk of loss. Past setups do not guarantee future results. Always use proper risk management.</div>
+</div>
+
+<!-- ═══════════════════════════════ CONTAINER ═══════════════════════════════ -->
+<div class="container">
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc">
+  <div class="toc-title">Contents</div>
+  <div class="toc-grid">
+    <div class="toc-item"><span class="toc-num">01</span>Core Definitions</div>
+    <div class="toc-item"><span class="toc-num">06</span>Bullish Trade Example — EUR/USD</div>
+    <div class="toc-item"><span class="toc-num">02</span>Market Structure (BOS &amp; CHoCH)</div>
+    <div class="toc-item"><span class="toc-num">07</span>Bearish Trade Example — GBP/USD</div>
+    <div class="toc-item"><span class="toc-num">03</span>Liquidity: Where Stops Live</div>
+    <div class="toc-item"><span class="toc-num">08</span>Liquidity Sweep / Fakeout — GBP/JPY</div>
+    <div class="toc-item"><span class="toc-num">04</span>Order Blocks</div>
+    <div class="toc-item"><span class="toc-num">09</span>Common Mistakes</div>
+    <div class="toc-item"><span class="toc-num">05</span>Full Trade Logic Framework</div>
+    <div class="toc-item"><span class="toc-num">10</span>Practice Guide &amp; Cheat Sheet</div>
+  </div>
+</div>
+
+<!-- ═══════════ SECTION 01: CORE DEFINITIONS ═══════════ -->
+<div class="section-header">
+  <span class="section-num">01</span>
+  <h2>Core <span class="accent">Definitions</span></h2>
+</div>
+
+<p>Every concept below has two explanations: <strong>Simple language</strong> for intuition, then <strong>technical language</strong> for precision. Read both — together they build real understanding.</p>
+
+<!-- Sell-Side Liquidity -->
+<div class="def-card bear">
+  <div class="def-term">Sell-Side Liquidity <span class="badge bear">SSL</span></div>
+  <p class="simple-def">
+    <strong>Simple:</strong> Imagine every trader who bought and placed their stop-loss <em>below</em> a recent swing low. All those stop orders pile up under that low like a cluster of landmines. The area <em>below</em> swing lows is called sell-side liquidity — it's where stops from long traders sit, waiting to be triggered.
+  </p>
+  <div class="technical-def">
+    <strong>Technical:</strong> Sell-side liquidity refers to the concentration of resting sell orders — specifically stop-loss orders from long positions and breakout sell orders from short-traders — that accumulate <strong>below</strong> identifiable swing lows, equal lows, trendline lows, and round number support levels. When price reaches this zone, these orders execute as market sells, creating a burst of downward momentum.
+  </div>
+</div>
+
+<!-- Buy-Side Liquidity -->
+<div class="def-card bull">
+  <div class="def-term">Buy-Side Liquidity <span class="badge bull">BSL</span></div>
+  <p class="simple-def">
+    <strong>Simple:</strong> Now flip it. Every short seller placed their stop-loss <em>above</em> a swing high. Every breakout trader placed a buy order just above a resistance level. All of those pile up above swing highs — that's buy-side liquidity. The area <em>above</em> highs is where stops from short trades sit.
+  </p>
+  <div class="technical-def">
+    <strong>Technical:</strong> Buy-side liquidity is the concentration of resting buy orders — stop-losses from short positions and breakout buy orders from long traders — that accumulate <strong>above</strong> swing highs, equal highs, trendline highs, and round number resistance levels. When price reaches this zone, these orders execute as market buys, producing upward momentum.
+  </div>
+</div>
+
+<!-- Liquidity Sweep -->
+<div class="def-card gold">
+  <div class="def-term">Liquidity Sweep <span class="badge gold">Sweep</span></div>
+  <p class="simple-def">
+    <strong>Simple:</strong> A liquidity sweep is when price briefly spikes into a cluster of stops, triggers them all, then immediately turns around and moves the other way. Think of it as a "fake breakout" engineered to collect orders before the real move.
+  </p>
+  <div class="technical-def">
+    <strong>Technical:</strong> A liquidity sweep (or "stop hunt") occurs when price extends beyond a key level — a swing high or low — triggering resting orders in that zone, then rapidly reverses. The sweep fills institutional order needs at better prices. Confirmation typically appears as a <strong>wick beyond the level + strong close back inside</strong> the range, often with a simultaneous shift in market structure.
+  </div>
+</div>
+
+<!-- Invalidation -->
+<div class="def-card neutral">
+  <div class="def-term">Invalidation <span class="badge">Risk Mgmt</span></div>
+  <p class="simple-def">
+    <strong>Simple:</strong> Invalidation is the exact point on the chart where your trade idea is proven wrong. If price reaches that point, the reason you entered no longer exists. Your stop-loss should be placed there.
+  </p>
+  <div class="technical-def">
+    <strong>Technical:</strong> Invalidation is the price level at which the conditions that justified a trade entry are structurally negated. For a bullish setup, invalidation occurs when price breaks and closes <strong>below</strong> the origin point of the bullish order block or below the most recent higher low. For a bearish setup, invalidation is a close <strong>above</strong> the bearish order block or above the most recent lower high.
+  </div>
+</div>
+
+<!-- Order Block -->
+<div class="def-card">
+  <div class="def-term">Order Block <span class="badge">OB</span></div>
+  <p class="simple-def">
+    <strong>Simple:</strong> An order block is the last candle (or small group of candles) moving in the <em>opposite direction</em> before a strong, explosive move. Institutions often left unfilled orders there, and price tends to return to that zone before resuming the trend.
+  </p>
+  <div class="technical-def">
+    <strong>Technical:</strong> An order block is typically identified as the <strong>last bearish candle before a bullish impulse</strong> (bullish OB) or the <strong>last bullish candle before a bearish impulse</strong> (bearish OB). It represents a zone where large institutional orders were placed. When price retraces into this zone, remaining orders are filled, often producing a reaction. A valid OB is one that caused a break of structure or CHoCH on its initial move.
+  </div>
+</div>
+
+<!-- BOS -->
+<div class="def-card bull">
+  <div class="def-term">Break of Structure <span class="badge bull">BOS</span></div>
+  <p class="simple-def">
+    <strong>Simple:</strong> In an uptrend, price makes higher highs. A Break of Structure happens when price takes out (closes above) the most recent swing high. It's trend confirmation — the uptrend is continuing.
+  </p>
+  <div class="technical-def">
+    <strong>Technical:</strong> A BOS occurs when price closes beyond the most recent swing point in the direction of the prevailing trend. In a bullish trend: price closes <strong>above</strong> the last higher high. In a bearish trend: price closes <strong>below</strong> the last lower low. BOS signals trend continuation. It is used to confirm bias, not to enter trades — entries follow pullbacks after BOS.
+  </div>
+</div>
+
+<!-- CHoCH -->
+<div class="def-card">
+  <div class="def-term">Change of Character <span class="badge">CHoCH</span></div>
+  <p class="simple-def">
+    <strong>Simple:</strong> CHoCH is the first sign the trend might be turning. In a downtrend, price has been making lower highs and lower lows. A CHoCH happens when price suddenly breaks above a previous lower high for the first time. That's a warning sign — something has changed.
+  </p>
+  <div class="technical-def">
+    <strong>Technical:</strong> A CHoCH is the first break <strong>against</strong> the prevailing trend structure. In a downtrend: the first close <strong>above</strong> a lower high. In an uptrend: the first close <strong>below</strong> a higher low. CHoCH does not confirm reversal — it signals potential reversal. Traders wait for subsequent BOS confirmation and look for a pullback into an order block or imbalance before entering.
+  </div>
+</div>
+
+<!-- Premium & Discount -->
+<div class="def-card gold">
+  <div class="def-term">Premium &amp; Discount <span class="badge gold">PD Array</span></div>
+  <p class="simple-def">
+    <strong>Simple:</strong> Think of price like a sale. When price is low relative to its recent range — it's on discount (good to buy). When price is high relative to its range — it's at a premium (good to sell). Institutions buy at discount, sell at premium.
+  </p>
+  <div class="technical-def">
+    <strong>Technical:</strong> Using the 50% equilibrium (EQ) of a defined price range (swing high to swing low): prices trading <strong>above 50%</strong> are in premium — ideal for selling short. Prices trading <strong>below 50%</strong> are in discount — ideal for buying long. Entries taken at extreme premium (75–100% of range) or extreme discount (0–25% of range) offer the best risk/reward ratios when combined with an order block and structural confirmation.
+  </div>
+</div>
+
+<!-- ═══════════ SECTION 02: MARKET STRUCTURE ═══════════ -->
+<div class="section-header">
+  <span class="section-num">02</span>
+  <h2>Market <span class="accent">Structure</span></h2>
+</div>
+
+<p>Market structure is the skeleton of price action. Before anything else, you must identify what the market is doing on the timeframe you're trading — and the timeframes above it.</p>
+
+<h3>The Three Market States</h3>
+
+<div class="flow-box">
+<span class="bull-txt">BULLISH STRUCTURE</span>   Higher Highs (HH) + Higher Lows (HL)
+  Price → makes new HH <span class="arrow">→</span> pulls back to HL <span class="arrow">→</span> pushes to new HH again
+  Pattern: HL → HH → HL → HH → HL → HH
+
+<span class="bear-txt">BEARISH STRUCTURE</span>  Lower Highs (LH) + Lower Lows (LL)
+  Price → makes new LL <span class="arrow">→</span> pulls back to LH <span class="arrow">→</span> drops to new LL
+  Pattern: LH → LL → LH → LL → LH → LL
+
+<span class="accent-txt">RANGING / CONSOLIDATION</span>  No clear direction
+  Price bounces between defined high and low — equal highs / equal lows
+  Often precedes a sweep of one side before a directional move
+</div>
+
+<h3>BOS vs CHoCH — Know the Difference</h3>
+
+<table class="rule-table">
+  <thead>
+    <tr>
+      <th>Signal</th>
+      <th>What it Breaks</th>
+      <th>What it Means</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="tag bull">BOS</span></td>
+      <td>Breaks WITH the trend (HH in uptrend, LL in downtrend)</td>
+      <td class="bull-td">Trend continuation confirmed</td>
+      <td>Wait for pullback to OB/discount for entry</td>
+    </tr>
+    <tr>
+      <td><span class="tag">CHoCH</span></td>
+      <td>Breaks AGAINST the trend (breaks a LH in downtrend)</td>
+      <td class="gold-td">Possible reversal beginning</td>
+      <td>Watch for confirmation, wait for OB pullback</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="flow-box">
+<span class="bear-txt">DOWNTREND REVERSAL SEQUENCE:</span>
+LH → LL → LH → LL → LH → <span class="gold-txt">CHoCH (breaks LH)</span> → pullback → <span class="bull-txt">BOS (breaks HH)</span> → new uptrend
+
+<span class="bull-txt">The CHoCH gets your attention. The BOS confirms the turn. The OB pullback gives the entry.</span>
+</div>
+
+<h3>Multi-Timeframe Alignment</h3>
+<p>Structure on a higher timeframe (HTF) overrules everything below it. Always align your trade with the HTF bias.</p>
+
+<ul class="body-list">
+  <li><strong>HTF (Daily/4H)</strong>: Defines the dominant trend and major liquidity pools</li>
+  <li><strong>MTF (1H/15M)</strong>: Confirms structure shift, identifies the order block to trade from</li>
+  <li><strong>LTF (5M/1M)</strong>: Finds precise entry within the OB, confirms CHoCH on entry timeframe</li>
+</ul>
+
+<!-- ═══════════ SECTION 03: LIQUIDITY ═══════════ -->
+<div class="section-header">
+  <span class="section-num">03</span>
+  <h2>Liquidity — <span class="accent">Where Stops Live</span></h2>
+</div>
+
+<p>Liquidity is the fuel price needs to move. Without a pool of orders to fill, large participants cannot execute their trades without moving the market against themselves. Understanding where retail traders place their stops is understanding where price is likely to go next.</p>
+
+<h3>Where Does Liquidity Form?</h3>
+
+<table class="rule-table">
+  <thead>
+    <tr>
+      <th>Liquidity Type</th>
+      <th>Location on Chart</th>
+      <th>Who Created It</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="tag bear">Sell-Side (SSL)</span></td>
+      <td>Below swing lows, below equal lows, below trendlines</td>
+      <td>Stop-losses of long traders; breakout shorts</td>
+    </tr>
+    <tr>
+      <td><span class="tag bull">Buy-Side (BSL)</span></td>
+      <td>Above swing highs, above equal highs, above trendlines</td>
+      <td>Stop-losses of short traders; breakout longs</td>
+    </tr>
+    <tr>
+      <td><span class="tag gold">Round Numbers</span></td>
+      <td>1.3000, 1.2500, 150.00 — psychological levels</td>
+      <td>Retail orders clustered at obvious numbers</td>
+    </tr>
+    <tr>
+      <td><span class="tag">Range Extremes</span></td>
+      <td>Above/below consolidation zones</td>
+      <td>Breakout traders on both sides</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Why Price Raids Liquidity Before Moving</h3>
+
+<p>Large institutional traders need the opposite side of the market to fill their orders. If an institution wants to buy millions of units, it needs sellers. The most sellers exist at stop-loss clusters <em>below</em> swing lows (sell-side liquidity). So price is pushed down into that zone, triggers all the stops (which become market sell orders), and the institution buys from those sellers at the low. Then price reverses.</p>
+
+<div class="callout gold">
+  <div class="callout-icon">⚡</div>
+  <strong>Key insight:</strong> The liquidity sweep is not random. Price does not "accidentally" spike below a low. It is engineered to collect orders. The spike is the move; what comes <em>after</em> the spike is the trade.
+</div>
+
+<div class="flow-box">
+<span class="gold-txt">LIQUIDITY GRAB SEQUENCE (Bullish):</span>
+Price approaches SSL below swing low
+  <span class="arrow">→</span> Price breaks below swing low (triggers stops / fills sell orders)
+  <span class="arrow">→</span> Price immediately wicks back above the low (rejection wick)
+  <span class="arrow">→</span> CHoCH forms on lower timeframe
+  <span class="arrow">→</span> Price retraces into bullish order block
+  <span class="arrow">→</span> Long entry, targeting BSL above
+
+<span class="gold-txt">LIQUIDITY GRAB SEQUENCE (Bearish):</span>
+Price approaches BSL above swing high
+  <span class="arrow">→</span> Price breaks above swing high (triggers stops)
+  <span class="arrow">→</span> Price immediately wicks back below (rejection wick)
+  <span class="arrow">→</span> CHoCH forms on lower timeframe
+  <span class="arrow">→</span> Price retraces into bearish order block
+  <span class="arrow">→</span> Short entry, targeting SSL below
+</div>
+
+<!-- ═══════════ SECTION 04: ORDER BLOCKS ═══════════ -->
+<div class="section-header">
+  <span class="section-num">04</span>
+  <h2>Order <span class="accent">Blocks</span></h2>
+</div>
+
+<h3>How to Identify a Valid Order Block</h3>
+
+<div class="callout info">
+  <strong>Rule of thumb:</strong> An order block is valid only if the candle (or zone) caused a move that resulted in a Break of Structure or a Change of Character. If the impulse after it was weak and sideways, it is not a reliable OB.
+</div>
+
+<h4>Bullish Order Block Identification</h4>
+<ul class="body-list">
+  <li>Find a strong bullish impulse move that broke structure (BOS) or caused a CHoCH</li>
+  <li>Identify the <strong>last bearish candle</strong> directly before that impulse began</li>
+  <li>That candle's body (open to close) + its high forms the bullish OB zone</li>
+  <li>When price returns to that zone, look for bullish reaction (long entry area)</li>
+</ul>
+
+<h4>Bearish Order Block Identification</h4>
+<ul class="body-list">
+  <li>Find a strong bearish impulse move that broke structure or caused a CHoCH</li>
+  <li>Identify the <strong>last bullish candle</strong> directly before that impulse began</li>
+  <li>That candle's body (open to close) + its low forms the bearish OB zone</li>
+  <li>When price returns to that zone, look for bearish reaction (short entry area)</li>
+</ul>
+
+<h3>Why Order Blocks Matter</h3>
+<p>Order blocks represent areas where institutional traders placed large orders. Not all of those orders were filled when price first moved through. When price returns (retraces), the remaining unfilled orders get triggered, causing price to react. This is why OBs act as support and resistance — not because of a line on a chart, but because of actual resting order flow.</p>
+
+<h3>Breaker Blocks</h3>
+<div class="def-card neutral">
+  <div class="def-term">Breaker Block</div>
+  <p class="simple-def"><strong>Simple:</strong> When an order block fails — price breaks through it and continues — it "flips" and often becomes resistance (if it was support) or support (if it was resistance).</p>
+  <div class="technical-def">
+    <strong>Technical:</strong> A bullish order block that is violated by a close below it becomes a <strong>bearish breaker</strong> — price will often return to it and sell from there. A bearish OB violated by a close above becomes a <strong>bullish breaker</strong>. Breakers are useful for counter-trend entries after a significant structure shift.
+  </div>
+</div>
+
+<!-- ═══════════ SECTION 05: FULL TRADE LOGIC ═══════════ -->
+<div class="section-header">
+  <span class="section-num">05</span>
+  <h2>Full Trade <span class="accent">Logic Framework</span></h2>
+</div>
+
+<p>This is the complete decision tree for building a trade from scratch. Every step matters. Skipping steps leads to errors.</p>
+
+<h3>The 7-Step Trade Build</h3>
+
+<div class="scenario-steps">
+  <div class="step">
+    <div style="min-width:70px"><div class="step-num">STEP 1</div><div class="step-label">HTF Bias</div></div>
+    <div class="step-text">Determine the higher timeframe (HTF) directional bias. Is the Daily/4H chart in a bullish or bearish market structure? All trades should align with this bias.</div>
+  </div>
+  <div class="step">
+    <div style="min-width:70px"><div class="step-num">STEP 2</div><div class="step-label">Liquidity</div></div>
+    <div class="step-text">Identify where the nearest liquidity pools are on the HTF. Where are the buy-side pools (above highs)? Where are the sell-side pools (below lows)? Price is likely heading toward one of them.</div>
+  </div>
+  <div class="step">
+    <div style="min-width:70px"><div class="step-num">STEP 3</div><div class="step-label">Sweep Watch</div></div>
+    <div class="step-text">Watch for a liquidity sweep at a key level. Did price spike below a swing low and come right back? Or spike above a high and immediately reject? This is your setup trigger.</div>
+  </div>
+  <div class="step">
+    <div style="min-width:70px"><div class="step-num">STEP 4</div><div class="step-label">CHoCH / BOS</div></div>
+    <div class="step-text">After the sweep, wait for a Change of Character on the lower timeframe (LTF). This is the first structural break against the sweep direction — confirmation the reversal is beginning.</div>
+  </div>
+  <div class="step">
+    <div style="min-width:70px"><div class="step-num">STEP 5</div><div class="step-label">Order Block</div></div>
+    <div class="step-text">After the CHoCH, price will often retrace. Identify the order block that formed during the initial impulse (the candle before the CHoCH move). This is your entry zone.</div>
+  </div>
+  <div class="step">
+    <div style="min-width:70px"><div class="step-num">STEP 6</div><div class="step-label">Entry</div></div>
+    <div class="step-text">Enter when price returns to the OB zone. Entry can be at the OB's level (limit order) or on a lower-timeframe confirmation candle within the OB. Enter in discount for longs; in premium for shorts.</div>
+  </div>
+  <div class="step">
+    <div style="min-width:70px"><div class="step-num">STEP 7</div><div class="step-label">SL / TP</div></div>
+    <div class="step-text">Place stop-loss below (for longs) or above (for shorts) the OB zone — usually a few pips beyond the sweep wick's extreme. Set take-profit at the next liquidity pool (opposing side BSL or SSL).</div>
+  </div>
+</div>
+
+<h3>Entry, Stop-Loss, and Take-Profit Logic</h3>
+
+<table class="rule-table">
+  <thead>
+    <tr><th>Component</th><th>Bullish Setup</th><th>Bearish Setup</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Entry</strong></td>
+      <td class="bull-td">Return to bullish OB (in discount, below 50% of range)</td>
+      <td class="bear-td">Return to bearish OB (in premium, above 50% of range)</td>
+    </tr>
+    <tr>
+      <td><strong>Stop Loss</strong></td>
+      <td>A few pips below the sweep low / bottom of OB</td>
+      <td>A few pips above the sweep high / top of OB</td>
+    </tr>
+    <tr>
+      <td><strong>Take Profit 1</strong></td>
+      <td class="bull-td">Most recent swing high (equal highs / buy-side liquidity)</td>
+      <td class="bear-td">Most recent swing low (equal lows / sell-side liquidity)</td>
+    </tr>
+    <tr>
+      <td><strong>Take Profit 2</strong></td>
+      <td class="bull-td">HTF swing high / major buy-side pool</td>
+      <td class="bear-td">HTF swing low / major sell-side pool</td>
+    </tr>
+    <tr>
+      <td><strong>Invalidation</strong></td>
+      <td class="bear-td">Price closes below the sweep low (OB violated)</td>
+      <td class="bull-td">Price closes above the sweep high (OB violated)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout info">
+  <strong>Risk-to-reward note:</strong> With this framework, your stop is tight (just beyond the OB / sweep) and your target is a full liquidity pool. This typically produces setups with 3:1 to 5:1 or higher RR when executed correctly. Protect capital first — always define risk before entry.
+</div>
+
+<!-- ═══════════ SECTION 06: BULLISH EXAMPLE ═══════════ -->
+<div class="section-header">
+  <span class="section-num">06</span>
+  <h2>Bullish <span class="accent">Trade Example</span></h2>
+</div>
+
+<p>Pair: <strong>EUR/USD</strong> | Timeframes: 4H bias, 1H entry, 15M confirmation</p>
+
+<div class="chart-example">
+  <div class="chart-header bull-header">
+    <span class="chart-title">🟢 Bullish Setup — Liquidity Sweep + OB Retest</span>
+    <span class="chart-pair">EUR/USD · 1H Chart</span>
+  </div>
+  <div class="chart-body">
+    <div class="chart-ascii"><span class="bull-c">BSL ──────────────────────────────────────── 1.0920 ← TARGET (equal highs above)</span>
+                             <span class="accent-c">↑ BOS</span>
+                             <span class="bull-c">  ┌──┐  impulse move up</span>
+<span class="bull-c">                          ┌─┘  └──────────────</span>
+                         <span class="bull-c">  │</span>
+  <span class="accent-c">Bullish OB zone ─────── │ [OB: 1.0862–1.0875] ← ENTRY ZONE</span>
+  (last bearish candle     <span class="bull-c">│</span>
+   before impulse)        <span class="bull-c"> │</span>     <span class="accent-c">← CHoCH formed here (first break of LH)</span>
+                          <span class="bull-c">│</span>
+              <span class="bear-c">┐</span>           <span class="bull-c">│</span>
+              <span class="bear-c">│  swing low  ↓</span>
+  <span class="bear-c">SSL ─────────└──┐ sweep wick ──── 1.0848</span>   <span class="gold-c">← STOP BELOW HERE (1.0843)</span>
+              <span class="bear-c">   └ (wick below, then closes back up)</span>
+</div>
+
+    <div class="scenario-steps">
+      <div class="step">
+        <div><div class="step-num bull-step">①</div></div>
+        <div class="step-text"><strong>HTF Bias (4H):</strong> EUR/USD is in bullish market structure — making HH and HL. The daily chart shows price above the 50% equilibrium of a recent major leg up. Bias is bullish.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num bull-step">②</div></div>
+        <div class="step-text"><strong>Liquidity Pool Identified:</strong> Below the previous swing low at 1.0848, there is sell-side liquidity — stops from longs who entered at that low. Above at 1.0920 sit equal highs — buy-side liquidity is the target.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num bull-step">③</div></div>
+        <div class="step-text"><strong>Sweep Occurs:</strong> Price drops below 1.0848, sweeping sell-side liquidity. A long wick appears on the 1H candle — but the candle <em>closes back above</em> 1.0848. This is the sweep signal.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num bull-step">④</div></div>
+        <div class="step-text"><strong>CHoCH on 15M:</strong> On the 15M chart, price breaks above the most recent lower high formed during the drop — this is the CHoCH. Upside momentum is beginning.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num bull-step">⑤</div></div>
+        <div class="step-text"><strong>OB Identified:</strong> The last bearish 15M candle before the CHoCH impulse sits at 1.0862–1.0875. This is the bullish order block. Price is expected to retrace into this zone.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num bull-step">⑥</div></div>
+        <div class="step-text"><strong>Entry &amp; Levels:</strong> Limit buy placed at 1.0868 (inside the OB). Stop-loss set at 1.0843 (below the sweep wick extreme). Take profit targeting 1.0920 (BSL at equal highs). RR ≈ 3.0:1.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="trade-setup">
+  <div class="trade-setup-header">Trade Parameters — EUR/USD Long</div>
+  <div class="trade-grid">
+    <div class="trade-cell">
+      <div class="trade-cell-label">Entry</div>
+      <div class="trade-cell-value entry">1.0868<br><small style="color:var(--muted)">Limit at OB midpoint</small></div>
+    </div>
+    <div class="trade-cell">
+      <div class="trade-cell-label">Stop Loss</div>
+      <div class="trade-cell-value sl">1.0843<br><small style="color:var(--muted)">Below sweep wick extreme</small></div>
+    </div>
+    <div class="trade-cell">
+      <div class="trade-cell-label">Take Profit</div>
+      <div class="trade-cell-value tp">1.0920<br><small style="color:var(--muted)">BSL equal highs</small></div>
+    </div>
+  </div>
+</div>
+
+<h3>Psychology Behind This Move</h3>
+<div class="psych-box">
+  <div class="psych-row">
+    <div class="psych-label retail">Retail Long</div>
+    <div class="psych-text">Entered long at the swing low (1.0848), placed stop just below at 1.0844. Feels confident — it's a "support level."</div>
+  </div>
+  <div class="psych-row">
+    <div class="psych-label retail">Retail Short</div>
+    <div class="psych-text">Sees price breaking below support and enters short at 1.0847 with stop above 1.0855. Thinks it's a breakout.</div>
+  </div>
+  <div class="psych-row">
+    <div class="psych-label smart">Institution</div>
+    <div class="psych-text">Pushes price below 1.0848 to trigger all those stops (sell orders flood the market). Buys the liquidity from both retail longs' stops AND retail shorts' entries at the best possible price.</div>
+  </div>
+  <div class="psych-row">
+    <div class="psych-label result">Result</div>
+    <div class="psych-text">Retail longs stopped out at a loss. Retail shorts trapped in a losing long move. Institution accumulates a massive long position at the sweep low, then drives price to BSL above.</div>
+  </div>
+</div>
+
+<!-- ═══════════ SECTION 07: BEARISH EXAMPLE ═══════════ -->
+<div class="section-header">
+  <span class="section-num">07</span>
+  <h2>Bearish <span class="accent">Trade Example</span></h2>
+</div>
+
+<p>Pair: <strong>GBP/USD</strong> | Timeframes: Daily bias, 4H entry, 1H confirmation</p>
+
+<div class="chart-example">
+  <div class="chart-header bear-header">
+    <span class="chart-title">🔴 Bearish Setup — BSL Sweep + OB Retest</span>
+    <span class="chart-pair">GBP/USD · 4H Chart</span>
+  </div>
+  <div class="chart-body">
+    <div class="chart-ascii">   <span class="bear-c">BSL ─── equal highs above ─── 1.2780 ← SWEEP (wick above, closes back below)</span>
+              <span class="bear-c">┌──┘  (wick above these highs, then rejected)</span>
+   <span class="accent-c">Bearish OB ──── [1.2745–1.2760] ← ENTRY ZONE (last bull candle before drop)</span>
+   (last bullish candle    <span class="bear-c">│   ↑ CHoCH (breaks HH structure to downside)</span>
+    before impulse down)   <span class="bear-c">│</span>
+                           <span class="bear-c">│</span>   <span class="bear-c">↓ impulse down (BOS through recent LL)</span>
+                           <span class="bear-c">└──┐</span>
+                              <span class="bear-c">│</span>
+                              <span class="bear-c">└────────────────</span>
+   <span class="bull-c">SSL ─── swing lows ──────────────────── 1.2650 ← TARGET</span>
+   <span class="gold-c">STOP: 1.2785 (above OB / above sweep wick)</span>
+</div>
+
+    <div class="scenario-steps">
+      <div class="step">
+        <div><div class="step-num bear-step">①</div></div>
+        <div class="step-text"><strong>HTF Bias (Daily):</strong> GBP/USD is in bearish market structure on the daily chart — LH and LL pattern intact. Price is in the upper premium zone, above the 50% equilibrium. Bias is bearish.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num bear-step">②</div></div>
+        <div class="step-text"><strong>BSL Identified:</strong> There are equal highs at 1.2780 on the 4H chart. Above those highs sit buy-side liquidity — short sellers' stops and breakout buy orders. SSL below swing lows at 1.2650 is the target.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num bear-step">③</div></div>
+        <div class="step-text"><strong>Sweep Occurs:</strong> Price rallies and spikes above 1.2780 (the equal highs), triggering all buy-side stops. The 4H candle wicks above but closes back below 1.2780. Classic sweep wick signature.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num bear-step">④</div></div>
+        <div class="step-text"><strong>CHoCH on 1H:</strong> After the sweep, the 1H chart breaks below its most recent higher low — CHoCH is confirmed. The micro-bullish structure is broken. Sellers are now in control.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num bear-step">⑤</div></div>
+        <div class="step-text"><strong>Bearish OB Located:</strong> The last bullish 1H candle before the CHoCH impulse down is at 1.2745–1.2760. This is the bearish order block. Price will likely retrace up into this zone.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num bear-step">⑥</div></div>
+        <div class="step-text"><strong>Entry &amp; Levels:</strong> Limit sell placed at 1.2752 (inside the bearish OB). Stop-loss at 1.2785 (above the sweep wick). Take profit targeting 1.2650 (SSL at swing lows). RR ≈ 3.1:1.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="trade-setup">
+  <div class="trade-setup-header">Trade Parameters — GBP/USD Short</div>
+  <div class="trade-grid">
+    <div class="trade-cell">
+      <div class="trade-cell-label">Entry</div>
+      <div class="trade-cell-value entry">1.2752<br><small style="color:var(--muted)">Limit at OB midpoint</small></div>
+    </div>
+    <div class="trade-cell">
+      <div class="trade-cell-label">Stop Loss</div>
+      <div class="trade-cell-value sl">1.2785<br><small style="color:var(--muted)">Above sweep wick extreme</small></div>
+    </div>
+    <div class="trade-cell">
+      <div class="trade-cell-label">Take Profit</div>
+      <div class="trade-cell-value tp">1.2650<br><small style="color:var(--muted)">SSL at swing lows</small></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SECTION 08: FAKEOUT / SWEEP EXAMPLE ═══════════ -->
+<div class="section-header">
+  <span class="section-num">08</span>
+  <h2>Fakeout / Liquidity Sweep <span class="gold">Example</span></h2>
+</div>
+
+<p>Pair: <strong>GBP/JPY</strong> | Timeframes: 4H bias, 1H chart | Scenario: Range environment with sweep of equal lows</p>
+
+<div class="chart-example">
+  <div class="chart-header sweep-header">
+    <span class="chart-title">⚡ Fakeout — Equal Lows Sweep + Bullish Reversal</span>
+    <span class="chart-pair">GBP/JPY · 1H Chart</span>
+  </div>
+  <div class="chart-body">
+    <div class="chart-ascii">   <span class="bull-c">Range High / BSL ─────────────────── 192.80 ← TARGET</span>
+   ┌──────────────────────────────────────────────────┐
+   │ <span class="accent-c">CONSOLIDATION RANGE</span> (price ranging, equal highs &amp; lows)   │
+   │      price bounces between 191.00 and 192.80         │
+   └──────────────────────────────────────────────────┘
+   <span class="bear-c">Equal Lows (SSL) ──────────────────── 191.00</span>
+   <span class="bear-c">Equal Lows (SSL) ──────────────────── 191.00</span>
+                                         <span class="bear-c">↓ SWEEP</span>
+   <span class="bear-c">                            ┌── 190.72 (wick low)</span>
+   <span class="gold-c">                            └ (candle closes BACK above 191.00)</span>
+   <span class="accent-c">OB Zone ─────────────────── [191.00–191.25] ← ENTRY</span>
+                                         <span class="bull-c">↑ CHoCH on 15M</span>
+   <span class="bull-c">                            ┌───────────────────── 192.80</span>
+   <span class="gold-c">STOP: 190.60 (below wick extreme)</span>
+</div>
+
+    <div class="scenario-steps">
+      <div class="step">
+        <div><div class="step-num gold-step">①</div></div>
+        <div class="step-text"><strong>Range Identified:</strong> GBP/JPY has been consolidating between 191.00 and 192.80 for several sessions. Equal lows form at 191.00 — tested twice. This is obvious sell-side liquidity. Retail traders are shorting here with stops above 192.80.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num gold-step">②</div></div>
+        <div class="step-text"><strong>The Fake Breakdown:</strong> Price breaks below 191.00 — retail breakout shorts enter, retail longs get stopped out. The 1H candle wicks to 190.72 but <em>closes back above 191.00</em>. This is the fakeout / liquidity grab. Retail shorts are now immediately trapped.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num gold-step">③</div></div>
+        <div class="step-text"><strong>Why This is a Signal:</strong> The rejection wick below 191.00 shows the level held as support <em>after</em> liquidity was grabbed. The close back above equal lows + long wick = confirmation of sweep. The 4H context is bullish — this is the setup trigger.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num gold-step">④</div></div>
+        <div class="step-text"><strong>CHoCH on 15M + OB Retest:</strong> On the 15M, price breaks a lower high (CHoCH). OB is at 191.00–191.25 (the candle body that formed the sweep origin). Price retraces into it — long entry triggered.</div>
+      </div>
+      <div class="step">
+        <div><div class="step-num gold-step">⑤</div></div>
+        <div class="step-text"><strong>Target Logic:</strong> The target is the buy-side liquidity at 192.80 (top of range, where shorts' stops sit). The range high becomes the magnet. Stop below the sweep wick at 190.60. RR ≈ 4:1.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout gold">
+  <div class="callout-icon">💡</div>
+  <strong>Fakeout recognition pattern:</strong> Price breaks level → candle wicks beyond → candle closes BACK inside the range → this is the signal. The close back inside is everything. A true breakout would close and hold below. A fakeout closes back inside within the same or next 1–2 candles.
+</div>
+
+<!-- ═══════════ SECTION 09 (inline): INVALIDATION RULES ═══════════ -->
+<div class="section-header">
+  <span class="section-num">09A</span>
+  <h2>Invalidation <span class="accent">Rules</span></h2>
+</div>
+
+<p>Knowing when your trade idea is wrong is just as important as knowing when it's right. Invalidation is not a loss — it's information. A properly placed stop acts as your invalidation level.</p>
+
+<h3>Bullish Setup Invalidation</h3>
+<div class="callout bear">
+  A bullish setup is invalidated when: <strong>Price closes below the sweep low</strong> (the wick extreme that started the move). This means the order block has been broken, the sweep low has been violated, and the institutional accumulation thesis is wrong. Exit immediately. Do not hope.
+</div>
+
+<div class="flow-box">
+<span class="bull-txt">Valid Bullish:</span>  Sweep low (191.00) <span class="arrow">→</span> CHoCH up <span class="arrow">→</span> OB retest <span class="arrow">→</span> holds <span class="arrow">→</span> move to BSL ✓
+
+<span class="bear-txt">Invalidated:</span>     Price returns and closes BELOW the sweep low (190.72 wick)
+                <span class="arrow">→</span> OB has failed, structure is now bearish
+                <span class="arrow">→</span> Close position, reassess, do NOT add to losers
+</div>
+
+<h3>Bearish Setup Invalidation</h3>
+<div class="callout bull">
+  A bearish setup is invalidated when: <strong>Price closes above the sweep high</strong>. The bearish OB has been broken. The short thesis is wrong. The sweep was a genuine breakout, not a fakeout. Close the trade.
+</div>
+
+<h3>Partial Invalidation Signs (Warning Flags)</h3>
+<ul class="body-list">
+  <li>Price retests your OB multiple times without reacting — multiple retests weaken the OB</li>
+  <li>Price closes inside your OB but continues past the midpoint toward your stop — caution</li>
+  <li>A higher-timeframe BOS occurs against your trade direction</li>
+  <li>A news event fundamentally changes the macro picture</li>
+</ul>
+
+<!-- ═══════════ SECTION 10: COMMON MISTAKES ═══════════ -->
+<div class="section-header">
+  <span class="section-num">10</span>
+  <h2>Common <span class="accent">Mistakes</span></h2>
+</div>
+
+<div class="mistake-list">
+  <div class="mistake">
+    <div class="mistake-icon">⛔</div>
+    <div class="mistake-content">
+      <h5>Trading every order block without structural context</h5>
+      <p>An OB without a preceding sweep, CHoCH, or structural reason is just a candle. Order blocks are only meaningful when they form at key structural turning points following a liquidity event. Mark every OB but only trade the ones that meet all conditions.</p>
+    </div>
+  </div>
+  <div class="mistake">
+    <div class="mistake-icon">⛔</div>
+    <div class="mistake-content">
+      <h5>Entering during the sweep, not after it</h5>
+      <p>Many traders see price approaching SSL and immediately buy — only to get swept themselves. The entry is <em>after</em> the sweep wick has formed and the candle has closed back above the level. Patience here separates profitable traders from those who become the liquidity.</p>
+    </div>
+  </div>
+  <div class="mistake">
+    <div class="mistake-icon">⛔</div>
+    <div class="mistake-content">
+      <h5>Confusing CHoCH and BOS — entering on CHoCH alone</h5>
+      <p>CHoCH is a warning, not a confirmation. Many traders enter the moment CHoCH appears, before price has retraced to the OB. This results in poor entries with wide stops and no structure backing the trade. Wait for the OB pullback.</p>
+    </div>
+  </div>
+  <div class="mistake">
+    <div class="mistake-icon">⛔</div>
+    <div class="mistake-content">
+      <h5>Ignoring the higher timeframe bias</h5>
+      <p>Setting up a "perfect" bullish entry on the 15M chart while the daily chart is in a clear downtrend is a recipe for pain. Always align with the dominant HTF trend. Counter-trend trades require exceptional confluence and experience.</p>
+    </div>
+  </div>
+  <div class="mistake">
+    <div class="mistake-icon">⛔</div>
+    <div class="mistake-content">
+      <h5>Moving stop-loss to avoid being stopped out</h5>
+      <p>When price approaches your stop, widening the stop-loss defeats the entire purpose of invalidation. If price is at your stop, your thesis may be wrong. Let the stop do its job. Widening stops turns small losses into account-damaging ones.</p>
+    </div>
+  </div>
+  <div class="mistake">
+    <div class="mistake-icon">⛔</div>
+    <div class="mistake-content">
+      <h5>Marking every swing as "buy-side" or "sell-side" liquidity</h5>
+      <p>Not every swing high or low has meaningful liquidity. The most significant pools are at: equal highs/lows (double tops/bottoms), previous day/week highs and lows, major swing points that held for multiple sessions, and round numbers. Be selective — quality over quantity.</p>
+    </div>
+  </div>
+  <div class="mistake">
+    <div class="mistake-icon">⛔</div>
+    <div class="mistake-content">
+      <h5>Expecting every liquidity sweep to reverse</h5>
+      <p>Sometimes price sweeps a level and continues in the same direction — this is a genuine breakout with momentum. The difference: a fakeout has a long wick closing back inside. A real breakout closes and holds beyond the level with follow-through. Learn to distinguish.</p>
+    </div>
+  </div>
+  <div class="mistake">
+    <div class="mistake-icon">⛔</div>
+    <div class="mistake-content">
+      <h5>Targeting the wrong liquidity pool</h5>
+      <p>Your take-profit must be placed at the <em>next</em> meaningful liquidity pool in the direction of your trade — not just any level. If there is a major structural zone sitting between your entry and target, price may stall there. Map all liquidity before entering, and choose targets with clear path.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SECTION: PRACTICE GUIDE ═══════════ -->
+<div class="section-header">
+  <span class="section-num">11</span>
+  <h2>Practice <span class="accent">Guide</span></h2>
+</div>
+
+<p>Reading charts with this framework takes time and repetition. Here is a structured practice routine to accelerate learning — all on historical charts before ever risking real capital.</p>
+
+<div class="practice-grid">
+  <div class="practice-card">
+    <h5>Week 1–2 — Structure Only</h5>
+    <ul>
+      <li>Open any forex pair on TradingView</li>
+      <li>Mark every swing HH, HL, LH, LL on the 4H chart</li>
+      <li>Identify every BOS and CHoCH you can find</li>
+      <li>Practice on 20 charts before moving on</li>
+      <li>Do not think about entries yet — just structure</li>
+    </ul>
+  </div>
+  <div class="practice-card">
+    <h5>Week 3–4 — Liquidity Mapping</h5>
+    <ul>
+      <li>On each chart, mark all equal highs (BSL) and equal lows (SSL)</li>
+      <li>Mark any double tops/bottoms as major liquidity zones</li>
+      <li>Watch replays: observe how price approaches and sweeps these zones</li>
+      <li>Note: does it fake out or break through? Study both cases</li>
+      <li>Keep a journal of what you observe</li>
+    </ul>
+  </div>
+  <div class="practice-card">
+    <h5>Week 5–6 — Order Blocks</h5>
+    <ul>
+      <li>After each BOS or CHoCH, identify the originating OB</li>
+      <li>Mark the OB zone (body of last opposing candle before impulse)</li>
+      <li>Watch replays: does price retrace into the OB? How does it react?</li>
+      <li>Mark valid OBs vs failed OBs — count the win rate over 50+ examples</li>
+    </ul>
+  </div>
+  <div class="practice-card">
+    <h5>Week 7–8 — Full Trade Simulation</h5>
+    <ul>
+      <li>Use TradingView's Replay feature or a demo account</li>
+      <li>Apply the 7-step framework to each setup</li>
+      <li>Write down: bias, liquidity, sweep, CHoCH, OB, entry, SL, TP</li>
+      <li>Track results: did the trade work? Why or why not?</li>
+      <li>Aim for 30+ simulated trades before going live</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Recommended Chart Routine (Daily)</h3>
+<div class="flow-box">
+1. Open charts <span class="arrow">→</span> <span class="accent-txt">Start on Daily TF</span> — mark bias, major liquidity pools
+   <span class="arrow">→</span> <span class="accent-txt">Drop to 4H</span> — identify structure (BOS / CHoCH), mark OBs
+   <span class="arrow">→</span> <span class="accent-txt">Drop to 1H/15M</span> — find sweeps, refine OB, plan entry
+
+2. Ask yourself these 5 questions for every setup:
+   <span class="bull-txt">①</span> What is the HTF bias?
+   <span class="bull-txt">②</span> What liquidity was just taken (or being approached)?
+   <span class="bull-txt">③</span> Has a CHoCH confirmed a shift?
+   <span class="bull-txt">④</span> Where is the order block I can enter from?
+   <span class="bull-txt">⑤</span> Where are my SL and TP, and is the RR at least 2:1?
+
+   If you cannot answer all 5 clearly → <span class="bear-txt">no trade.</span>
+</div>
+
+<!-- ═══════════ CHEAT SHEET ═══════════ -->
+<div class="section-header">
+  <span class="section-num">12</span>
+  <h2>One-Page <span class="gold">Cheat Sheet</span></h2>
+</div>
+
+<div class="cheat-sheet">
+  <div class="cheat-header">
+    <div>
+      <h3>Trading Logic — Quick Reference</h3>
+      <div class="cheat-sub">Market Structure · Liquidity · Order Blocks · Entry Logic</div>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-align:right;">For educational use only<br>Not financial advice</div>
+  </div>
+  <div class="cheat-grid">
+    <div class="cheat-cell">
+      <h5>Key Terms</h5>
+      <ul>
+        <li><b>BSL</b> — Buy-side liquidity: above swing highs (shorts' stops)</li>
+        <li><b>SSL</b> — Sell-side liquidity: below swing lows (longs' stops)</li>
+        <li><b>BOS</b> — Break of structure (WITH trend = continuation)</li>
+        <li><b>CHoCH</b> — Change of character (AGAINST trend = potential reversal)</li>
+        <li><b>OB</b> — Order block: last opposing candle before impulse</li>
+        <li><b>Sweep</b> — Spike through level, closes back inside</li>
+        <li><b>Discount</b> — Below 50% of range (buy zone)</li>
+        <li><b>Premium</b> — Above 50% of range (sell zone)</li>
+      </ul>
+    </div>
+    <div class="cheat-cell">
+      <h5 class="bull">Bullish Setup Checklist</h5>
+      <ul>
+        <li>HTF structure is bullish (HH + HL)</li>
+        <li>SSL swept below swing low (wick + close back above)</li>
+        <li>CHoCH confirmed on LTF (break of lower high)</li>
+        <li>Bullish OB identified (last bearish candle before impulse)</li>
+        <li>Price retests OB in discount zone (&lt;50%)</li>
+        <li>Entry inside OB; SL below sweep wick</li>
+        <li>TP at BSL (equal highs / swing highs above)</li>
+        <li>Invalidation: close below sweep low</li>
+      </ul>
+    </div>
+    <div class="cheat-cell">
+      <h5 class="bear">Bearish Setup Checklist</h5>
+      <ul>
+        <li>HTF structure is bearish (LH + LL)</li>
+        <li>BSL swept above swing high (wick + close back below)</li>
+        <li>CHoCH confirmed on LTF (break of higher low)</li>
+        <li>Bearish OB identified (last bullish candle before impulse)</li>
+        <li>Price retests OB in premium zone (&gt;50%)</li>
+        <li>Entry inside OB; SL above sweep wick</li>
+        <li>TP at SSL (equal lows / swing lows below)</li>
+        <li>Invalidation: close above sweep high</li>
+      </ul>
+    </div>
+    <div class="cheat-cell">
+      <h5 class="gold">Liquidity Sweep Rules</h5>
+      <ul>
+        <li>Must wick THROUGH the level (highs or lows)</li>
+        <li>Candle must CLOSE back inside the level</li>
+        <li>Long wick = stronger sweep signal</li>
+        <li>Follow with CHoCH on LTF to confirm</li>
+        <li>Fakeout ≠ breakout: close back inside = fakeout</li>
+        <li>Price often reverses to opposite liquidity pool</li>
+        <li>Equal highs/lows are the strongest sweep targets</li>
+        <li>Round numbers (1.3000, 150.00) = major SSL/BSL</li>
+      </ul>
+    </div>
+    <div class="cheat-cell">
+      <h5>Order Block Rules</h5>
+      <ul>
+        <li>Bullish OB = last bearish candle before bullish impulse</li>
+        <li>Bearish OB = last bullish candle before bearish impulse</li>
+        <li>OB must have caused a BOS or CHoCH to be valid</li>
+        <li>OB zone = body of the candle (open to close)</li>
+        <li>Multiple retests of OB weaken its validity</li>
+        <li>Broken OB = Breaker Block (flips polarity)</li>
+        <li>Best OBs align with sweep + discount/premium zone</li>
+        <li>Use LTF confirmation candle for precise entry</li>
+      </ul>
+    </div>
+    <div class="cheat-cell">
+      <h5>Common Mistakes to Avoid</h5>
+      <ul>
+        <li>Trading OBs without sweep + CHoCH confirmation</li>
+        <li>Entering DURING the sweep (not after)</li>
+        <li>Ignoring HTF bias — always trade with it</li>
+        <li>Taking every CHoCH as a reversal signal</li>
+        <li>Moving SL to "save" a losing trade</li>
+        <li>Marking too many OBs — quality over quantity</li>
+        <li>Expecting every sweep to reverse</li>
+        <li>Targeting levels with obstacles in the path</li>
+      </ul>
+    </div>
+  </div>
+  <div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--bg3);">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:center;letter-spacing:0.1em;">
+      THE 5 QUESTIONS: &nbsp;①HTF Bias? &nbsp;②Liquidity swept? &nbsp;③CHoCH confirmed? &nbsp;④OB identified? &nbsp;⑤SL/TP defined with ≥2:1 RR?
+      <br><br>
+      <span style="color:var(--bear)">If you can't answer all 5 → NO TRADE &nbsp;|&nbsp;</span>
+      <span style="color:var(--bull)">Entry at OB in discount/premium → SL at sweep extreme → TP at opposing liquidity</span>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div style="text-align:center;padding:16px 0 8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);letter-spacing:0.1em;">
+  These notes are for educational and study purposes only.<br>
+  Trading carries significant risk. Always use proper risk management and never risk more than you can afford to lose.<br>
+  These concepts do not guarantee profitable trading results.
+</div>
+
+</div><!-- /container -->
+</body>
+</html>
