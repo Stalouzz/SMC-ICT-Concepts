@@ -36,4 +36,4 @@ Claude influence
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/trading-logic-notes.git
+git clone https://github.com/Starlouzz/trading-logic-notes.git
