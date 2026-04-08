@@ -10,7 +10,8 @@ A complete beginner-to-intermediate reference on how price truly moves — liqui
 
 ## 📖 Overview
 
-This project is a comprehensive, single-page HTML document that serves as a study guide for understanding institutional trading concepts. It breaks down complex trading principles into digestible explanations with both simple and technical definitions, real chart examples, and actionable trade frameworks.
+This project is a comprehensive, single-page HTML document that serves as a study guide for understanding institutional trading concepts. It breaks down complex trading principles into digestible explanations with both simple and technical definitions, real chart examples, and actionable trade frameworks. Built with love by Miruka Benard.
+Claude influence
 
 ### What You'll Learn
 
